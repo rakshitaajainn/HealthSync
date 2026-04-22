@@ -1,0 +1,1788 @@
+{
+  "info": {
+    "_postman_id": "8d2a5f8f-0f86-4ab5-9ab0-9d4ef73c6d11",
+    "name": "HealthSync API",
+    "description": "Postman collection for HealthSync backend APIs. Covers success, error, and edge cases for auth, reports, AI, emergency, root, and health endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.collectionVariables.set('randomEmail', `healthsync.${Date.now()}@example.com`);",
+          "pm.collectionVariables.set('randomName', `HealthSync User ${Date.now()}`);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "reportId",
+      "value": ""
+    },
+    {
+      "key": "randomEmail",
+      "value": ""
+    },
+    {
+      "key": "randomName",
+      "value": ""
+    },
+    {
+      "key": "validPassword",
+      "value": "Password123"
+    },
+    {
+      "key": "existingEmail",
+      "value": ""
+    },
+    {
+      "key": "existingPassword",
+      "value": "Password123"
+    },
+    {
+      "key": "otherUserToken",
+      "value": ""
+    },
+    {
+      "key": "otherUserReportId",
+      "value": ""
+    },
+    {
+      "key": "sampleImagePath",
+      "value": "C:\\\\path\\\\to\\\\sample-report.png"
+    },
+    {
+      "key": "samplePdfPath",
+      "value": "C:\\\\path\\\\to\\\\sample-report.pdf"
+    },
+    {
+      "key": "invalidFilePath",
+      "value": "C:\\\\path\\\\to\\\\not-allowed.txt"
+    },
+    {
+      "key": "invalidObjectId",
+      "value": "12345"
+    },
+    {
+      "key": "missingObjectId",
+      "value": "507f1f77bcf86cd799439011"
+    }
+  ],
+  "item": [
+    {
+      "name": "Root & Health",
+      "item": [
+        {
+          "name": "GET Root - Success",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Success case for the API root endpoint."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Root payload includes version and endpoints', function () {",
+                  "  pm.expect(data.message).to.eql('Welcome to HealthSync API');",
+                  "  pm.expect(data).to.have.property('version');",
+                  "  pm.expect(data).to.have.property('endpoints');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Health - Success",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Health check success case."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Health response is valid', function () {",
+                  "  pm.expect(data.status).to.eql('OK');",
+                  "  pm.expect(data).to.have.property('timestamp');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Unknown Route - 404 Error",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/not-a-real-route",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "not-a-real-route"
+              ]
+            },
+            "description": "Error case for unknown routes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('404 payload is structured', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Route not found');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "POST Signup - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{randomName}}\",\n  \"email\": \"{{randomEmail}}\",\n  \"password\": \"{{validPassword}}\",\n  \"age\": 29,\n  \"bloodGroup\": \"O+\",\n  \"allergies\": [\"Dust\"],\n  \"phone\": \"+91-9999999999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Success case for user signup. Saves token, userId, and existingEmail for later requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Signup returns token and user', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data).to.have.property('token');",
+                  "  pm.expect(data).to.have.property('user');",
+                  "});",
+                  "pm.collectionVariables.set('token', data.token);",
+                  "pm.collectionVariables.set('userId', data.user.id);",
+                  "pm.collectionVariables.set('existingEmail', pm.collectionVariables.get('randomEmail'));",
+                  "pm.collectionVariables.set('existingPassword', pm.collectionVariables.get('validPassword'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Signup - Duplicate Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate User\",\n  \"email\": \"{{existingEmail}}\",\n  \"password\": \"{{validPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Error case for signup with an already-registered email."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Duplicate email is rejected', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.include('already exists');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Signup - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\",\n  \"email\": \"not-an-email\",\n  \"password\": \"123\",\n  \"age\": 200,\n  \"bloodGroup\": \"ZZ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Error and edge case coverage for invalid signup payload values."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Validation errors are returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Validation failed');",
+                  "  pm.expect(data.errors).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Login - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{existingEmail}}\",\n  \"password\": \"{{existingPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Success case for login. Refreshes token collection variable."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Login returns token and user', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(data.user.email).to.eql(pm.collectionVariables.get('existingEmail'));",
+                  "});",
+                  "pm.collectionVariables.set('token', data.token);",
+                  "pm.collectionVariables.set('userId', data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Login - Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{existingEmail}}\",\n  \"password\": \"WrongPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Error case for invalid credentials."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Invalid credentials are rejected', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Invalid email or password');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Login - Missing Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{existingEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Validation failure when password is omitted."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Validation error payload is returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.errors).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Profile - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Protected route success case for reading the logged-in user's profile."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Profile response matches authenticated user', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.user.id).to.eql(pm.collectionVariables.get('userId'));",
+                  "  pm.expect(data.user.email).to.eql(pm.collectionVariables.get('existingEmail'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Profile - Missing Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Protected route error case with no Authorization header."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Missing token response contains NO_TOKEN code', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('NO_TOKEN');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Profile - Invalid Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.jwt.token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Protected route error case with malformed JWT."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Invalid token is rejected', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('INVALID_TOKEN');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Profile - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated HealthSync User\",\n  \"age\": 30,\n  \"bloodGroup\": \"A+\",\n  \"allergies\": [\"Dust\", \"Pollen\"],\n  \"phone\": \"+91-8888888888\",\n  \"medicalHistory\": \"Mild seasonal allergy\",\n  \"dateOfBirth\": \"1995-05-05T00:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Success case for updating profile fields."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Profile is updated', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.user.name).to.eql('Updated HealthSync User');",
+                  "  pm.expect(data.user.bloodGroup).to.eql('A+');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Profile - Invalid Blood Group",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bloodGroup\": \"XYZ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Edge case where Mongoose validation should fail for enum values."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 after validation fix', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Validation message is surfaced', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.include('bloodGroup');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "GET Reports - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports"
+              ]
+            },
+            "description": "Success case for listing the current user's reports."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Reports list shape is valid', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.reports).to.be.an('array');",
+                  "  pm.expect(data.count).to.eql(data.reports.length);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Upload Report - Success (Image)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{sampleImagePath}}"
+                },
+                {
+                  "key": "reportType",
+                  "type": "text",
+                  "value": "blood_test"
+                },
+                {
+                  "key": "description",
+                  "type": "text",
+                  "value": "CBC report for OCR and AI testing"
+                },
+                {
+                  "key": "tags",
+                  "type": "text",
+                  "value": "cbc,test,ocr"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "upload"
+              ]
+            },
+            "description": "Success case for uploading a supported image report. Saves reportId for later requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Upload response includes report metadata', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.report).to.have.property('id');",
+                  "  pm.expect(data.report.status).to.eql('pending');",
+                  "});",
+                  "pm.collectionVariables.set('reportId', data.report.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Upload Report - Missing File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reportType",
+                  "type": "text",
+                  "value": "blood_test"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "upload"
+              ]
+            },
+            "description": "Error case when file is not included in upload."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Missing file error is returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('NO_FILE');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Upload Report - Invalid Report Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{sampleImagePath}}"
+                },
+                {
+                  "key": "reportType",
+                  "type": "text",
+                  "value": "prescription"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "upload"
+              ]
+            },
+            "description": "Error case for unsupported reportType enum value."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Invalid report type is rejected', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('INVALID_REPORT_TYPE');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Upload Report - Invalid File Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{invalidFilePath}}"
+                },
+                {
+                  "key": "reportType",
+                  "type": "text",
+                  "value": "other"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "upload"
+              ]
+            },
+            "description": "Error case for file types rejected by multer file filter."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Invalid file type returns validation error', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Report By ID - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{reportId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "{{reportId}}"
+              ]
+            },
+            "description": "Success case for fetching a specific report by ID."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Fetched report matches saved reportId', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.report._id).to.eql(pm.collectionVariables.get('reportId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Report By ID - Missing Record",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{missingObjectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "{{missingObjectId}}"
+              ]
+            },
+            "description": "Error case where ObjectId is valid format but no report exists."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Missing report returns REPORT_NOT_FOUND', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('REPORT_NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Report By ID - Invalid ObjectId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{invalidObjectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "{{invalidObjectId}}"
+              ]
+            },
+            "description": "Edge case: malformed Mongo ObjectId. Current implementation returns 500 from Mongoose cast error."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status handles malformed object ID appropriately (400/500)', function () {",
+                  "  pm.expect([400, 500]).to.include(pm.response.code);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Error payload is returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Report - Success",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{reportId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "{{reportId}}"
+              ]
+            },
+            "description": "Success case for deleting a report owned by the current user."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Delete response is successful', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.message).to.eql('Report deleted successfully');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Report - Already Deleted",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{reportId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "{{reportId}}"
+              ]
+            },
+            "description": "Edge case for deleting the same report twice."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404 after prior delete', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Second delete reports missing record', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('REPORT_NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "item": [
+        {
+          "name": "POST Predict Health - Success High Risk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"age\": 68,\n  \"weight\": 98,\n  \"height\": 165,\n  \"systolic\": 155,\n  \"diastolic\": 96,\n  \"gender\": \"M\",\n  \"smoker\": true,\n  \"diabetes\": true,\n  \"sleepHours\": 5,\n  \"dietQuality\": \"poor\",\n  \"activityLevel\": \"low\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/predict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "predict"
+              ]
+            },
+            "description": "Success case for risk prediction with clearly high-risk inputs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Prediction response is complete', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.data).to.have.property('riskLevel');",
+                  "  pm.expect(data.data).to.have.property('riskScore');",
+                  "  pm.expect(data.data.recommendations).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Predict Health - Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"age\": 30,\n  \"weight\": 70\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/predict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "predict"
+              ]
+            },
+            "description": "Error case when required prediction fields are missing."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Required field message is returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.include('Required fields');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Predict Health - Validation Edge Case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"age\": 15,\n  \"weight\": 10,\n  \"height\": 90,\n  \"systolic\": 20,\n  \"diastolic\": 10,\n  \"sleepHours\": 40,\n  \"dietQuality\": \"excellent\",\n  \"activityLevel\": \"extreme\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/predict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "predict"
+              ]
+            },
+            "description": "Edge case coverage for out-of-range vitals and unsupported lifestyle enums. Current implementation surfaces these as 500 with validation message."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status handles edge cases properly (400/500)', function () {",
+                  "  pm.expect([400, 500]).to.include(pm.response.code);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Validation error message bubbles up', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Analyze Report - Missing reportId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/analyze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "analyze"
+              ]
+            },
+            "description": "Error case when analyze endpoint is called without reportId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Missing reportId is rejected', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Report ID is required');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Analyze Report - Missing Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportId\": \"{{missingObjectId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/analyze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "analyze"
+              ]
+            },
+            "description": "Error case for valid-looking but missing reportId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Missing report is reported', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Report not found');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Insights - Missing Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/insights/{{missingObjectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "insights",
+                "{{missingObjectId}}"
+              ]
+            },
+            "description": "Error case for insights lookup when report does not exist."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Missing insights report returns not found', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Report not found');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Insights - Invalid Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.jwt.token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/insights/{{missingObjectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ai",
+                "insights",
+                "{{missingObjectId}}"
+              ]
+            },
+            "description": "Protected route error case using an invalid JWT."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('JWT failure is returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.code).to.eql('INVALID_TOKEN');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Emergency",
+      "item": [
+        {
+          "name": "GET Emergency Info - Success",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emergency/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "{{userId}}"
+              ]
+            },
+            "description": "Public success case for emergency profile lookup."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Emergency info contains public-safe fields', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.data).to.have.property('name');",
+                  "  pm.expect(data.data).to.have.property('bloodGroup');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Emergency Info - Invalid User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emergency/{{invalidObjectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "{{invalidObjectId}}"
+              ]
+            },
+            "description": "Error case for malformed MongoDB ObjectId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Invalid user ID format is returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Invalid user ID format');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Emergency Info - User Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emergency/{{missingObjectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "{{missingObjectId}}"
+              ]
+            },
+            "description": "Error case for a valid-format but non-existent user."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('User not found is returned', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('User not found');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Emergency QR - Success Base64",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emergency/{{userId}}/qr",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "{{userId}}",
+                "qr"
+              ]
+            },
+            "description": "Public success case for default QR response in base64 JSON format."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('QR response includes base64 data URL', function () {",
+                  "  pm.expect(data.success).to.eql(true);",
+                  "  pm.expect(data.data.format).to.eql('base64');",
+                  "  pm.expect(data.data.qrCode).to.match(/^data:image\\/png;base64,/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Emergency QR - Success SVG",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emergency/{{userId}}/qr?format=svg",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "{{userId}}",
+                "qr"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "svg"
+                }
+              ]
+            },
+            "description": "Edge case for alternate QR response format."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is SVG', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('image/svg+xml');",
+                  "});",
+                  "pm.test('SVG body is returned', function () {",
+                  "  pm.expect(pm.response.text()).to.include('<svg');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Emergency QR - Invalid User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emergency/{{invalidObjectId}}/qr",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "{{invalidObjectId}}",
+                "qr"
+              ]
+            },
+            "description": "Error case for QR generation with malformed userId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "pm.test('Malformed user ID is rejected', function () {",
+                  "  pm.expect(data.success).to.eql(false);",
+                  "  pm.expect(data.message).to.eql('Invalid user ID format');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
